@@ -114,6 +114,7 @@ class Game {
     this.lastSend = 0;
     this.lastTime = performance.now();
     this.raycaster = new THREE.Raycaster();
+    this.raycaster.camera = this.camera;   // required if a Sprite ever ends up in a raycast
     this.animFrame = requestAnimationFrame((t) => this.loop(t));
 
     this.startIntro();

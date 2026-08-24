@@ -205,6 +205,7 @@ export class Arsenal {
     }
 
     // -------- hitscan --------
+    this.raycaster.camera = camera;   // required if a Sprite ever ends up in a raycast
     const pellets = w.def.pellets || 1;
     const range = w.def.range || 200;
     const hits = {};  // targetId -> {count, headshot}

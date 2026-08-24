@@ -37,6 +37,7 @@ export class TitanEntity {
     this.hbCanvas.width = 128; this.hbCanvas.height = 26;
     this.hbTex = new THREE.CanvasTexture(this.hbCanvas);
     this.healthBar = new THREE.Sprite(new THREE.SpriteMaterial({ map: this.hbTex, depthTest: false, transparent: true }));
+    this.healthBar.raycast = () => {};   // UI-only: must never block or crash weapon raycasts
     this.healthBar.scale.set(4.4, 0.9, 1);
     this.healthBar.position.y = 5.6 * this.chassis.scale;
     this.mesh.add(this.healthBar);

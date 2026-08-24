@@ -222,6 +222,7 @@ export function makeNameSprite(text, colorCss) {
   const tex = new THREE.CanvasTexture(canvas);
   const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true }));
   sprite.scale.set(3.2, 0.8, 1);
+  sprite.raycast = () => {};   // UI-only: must never block or crash weapon raycasts
   return sprite;
 }
 
