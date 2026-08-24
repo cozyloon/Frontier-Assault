@@ -13,8 +13,11 @@ function mulberry32(a) {
 
 const THEMES = {
   city:       { ground: 0x41464f, wall: 0x5a6678, accent: 0x7e8fa8, fog: 0x232c3d, sky: 0x2e3d5c, hMin: 8, hMax: 34 },
-  canyon:     { ground: 0x6a563e, wall: 0x8a6f52, accent: 0xa8886a, fog: 0x3d2f1e, sky: 0x4a3c28, hMin: 6, hMax: 20 },
-  industrial: { ground: 0x424a46, wall: 0x5c7168, accent: 0x7e9a8c, fog: 0x1e2b25, sky: 0x2a3f35, hMin: 10, hMax: 28 }
+  canyon:     { ground: 0x6a563e, wall: 0x8a6f52, accent: 0xa8886a, fog: 0x3d2f1e, sky: 0x4a3c28, hMin: 6, hMax: 20, rocks: true },
+  industrial: { ground: 0x424a46, wall: 0x5c7168, accent: 0x7e9a8c, fog: 0x1e2b25, sky: 0x2a3f35, hMin: 10, hMax: 28 },
+  wasteland:  { ground: 0x8a7454, wall: 0x99845f, accent: 0xb9a078, fog: 0x584a32, sky: 0x6a5638, hMin: 5, hMax: 16, rocks: true, windowLit: '#ffcf7a' },
+  snow:       { ground: 0xc4cdd6, wall: 0x7e8b9c, accent: 0xa2b1c2, fog: 0x8fa2b5, sky: 0x6d84a0, hMin: 8, hMax: 26, windowLit: '#bfe0ff' },
+  volcanic:   { ground: 0x37302f, wall: 0x4d4042, accent: 0x7a4f3a, fog: 0x2a1a15, sky: 0x38211a, hMin: 9, hMax: 30, rocks: true, windowLit: '#ff9a5a' }
 };
 
 // facade texture with randomly lit windows (also used as emissive map for glow)
@@ -253,7 +256,7 @@ export function buildWorld(scene, mapDef) {
   const trimMat = new THREE.MeshLambertMaterial({ color: new THREE.Color(theme.wall).multiplyScalar(0.55) });
   // two window-facade variants for tall structures
   const winMats = [0, 1].map(() => {
-    const tex = makeWindowTexture(rng, cssHex(theme.wall), '#ffd98a');
+    const tex = makeWindowTexture(rng, cssHex(theme.wall), theme.windowLit || '#ffd98a');
     return new THREE.MeshLambertMaterial({
       color: 0xffffff, map: tex,
       emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: 0.22
@@ -420,8 +423,8 @@ export function buildWorld(scene, mapDef) {
       for (let c2 = 0; c2 < 3; c2++) addBox(bx + (rng() - 0.5) * 3, 0.7, bz + (rng() - 0.5) * 3, 1.4, 1.4, 1.4, rng() < 0.5 ? accMat : darkMat);
     } else if (kind < 0.85) {
       // storage silo / tank
-      addCylinderProp(bx, bz, 1.6 + rng() * 1.2, 5 + rng() * 5, theme === THEMES.canyon ? propMats[0] : accMat);
-    } else if (theme === THEMES.canyon) {
+      addCylinderProp(bx, bz, 1.6 + rng() * 1.2, 5 + rng() * 5, theme.rocks ? propMats[0] : accMat);
+    } else if (theme.rocks) {
       // rock formation
       const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(2 + rng() * 2.5, 0), wallMat);
       rock.position.set(bx, 1 + rng(), bz);

@@ -157,10 +157,16 @@ export const TITAN_PRIMARIES = {
     damage: 190, pilotDamage: 90, rpm: 500, mag: 4, burst: 4, reload: 2.8, projectile: { speed: 60, radius: 4 }, auto: false },
   railgun: { id: 'railgun', name: 'Plasma Railgun', unlock: 12,
     damage: 1400, pilotDamage: 200, rpm: 40, mag: 1, reload: 1.2, hitscan: true, chargeTime: 1.6, beam: true },
+  predator: { id: 'predator', name: 'Predator Cannon', unlock: 16,
+    damage: 70, pilotDamage: 40, rpm: 900, mag: 80, reload: 3.2, spread: 0.03, range: 150, auto: true, hitscan: true },
+  thermite: { id: 'thermite', name: 'T-203 Thermite Launcher', unlock: 23,
+    damage: 520, pilotDamage: 140, rpm: 70, mag: 3, reload: 2.6, projectile: { speed: 48, gravity: 10, radius: 5 }, auto: false },
   arc_cannon: { id: 'arc_cannon', name: 'Arc Cannon', unlock: 21,
     damage: 900, pilotDamage: 250, rpm: 45, mag: 1, reload: 1.4, hitscan: true, chargeTime: 1.8, chain: 2, beam: true },
   triple_threat: { id: 'triple_threat', name: 'Triple Threat', unlock: 28,
     damage: 320, pilotDamage: 110, rpm: 110, mag: 3, burst: 3, reload: 2.6, projectile: { speed: 32, gravity: 12, radius: 4 }, auto: false },
+  splitter: { id: 'splitter', name: 'Splitter Rifle', unlock: 31,
+    damage: 65, pilotDamage: 35, rpm: 320, mag: 18, reload: 2.2, spread: 0.02, range: 120, auto: true, hitscan: true, pellets: 3 },
   leadwall: { id: 'leadwall', name: 'Leadwall', unlock: 35,
     damage: 95, pilotDamage: 45, rpm: 180, mag: 6, reload: 2.4, spread: 0.055, range: 70, auto: false, hitscan: true, pellets: 6 }
 };
@@ -206,7 +212,10 @@ export const MATCH = {
 export const MAPS = {
   angel_city: { id: 'angel_city', name: 'Angel City', desc: 'Dense urban blocks, tight alleys, wall-run heaven.', size: 260, seed: 1337, theme: 'city' },
   fracture:   { id: 'fracture', name: 'Fracture', desc: 'Open dig site with scattered structures. Titan country.', size: 320, seed: 4242, theme: 'canyon' },
-  rise:       { id: 'rise', name: 'Rise', desc: 'Massive parallel walls and ramps built for momentum.', size: 280, seed: 9001, theme: 'industrial' }
+  rise:       { id: 'rise', name: 'Rise', desc: 'Massive parallel walls and ramps built for momentum.', size: 280, seed: 9001, theme: 'industrial' },
+  boneyard:   { id: 'boneyard', name: 'Boneyard', desc: 'Sun-bleached wasteland outpost. Long sightlines, low cover.', size: 300, seed: 7777, theme: 'wasteland' },
+  glacier:    { id: 'glacier', name: 'Glacier', desc: 'Frozen research colony under an arctic sky.', size: 280, seed: 2468, theme: 'snow' },
+  caldera:    { id: 'caldera', name: 'Caldera', desc: 'Mining city built into a volcanic rim. Ash and ember.', size: 300, seed: 8181, theme: 'volcanic' }
 };
 
 export const FACTIONS = { imc: { id: 'imc', name: 'IMC', color: 0x4da3ff }, militia: { id: 'militia', name: 'Militia', color: 0xffb24d } };

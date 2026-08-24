@@ -305,7 +305,8 @@ const WEAPON_TINTS = {
   hemlok: [0x2c2a33, 0x5a4a7a], car: [0x2a2e35, 0x4a6a8a], spitfire: [0x30332a, 0x5a6a3a],
   kraber: [0x262a30, 0x704a3a], p2011: [0x2b313a, 0x4a4f58], re45: [0x2d2a2a, 0x7a3a3a],
   wingman: [0x322c26, 0x8a6a3a], archer: [0x2a3038, 0x3a5a7a], sidewinder: [0x332d28, 0x8a5a2a],
-  mag_launcher: [0x28313a, 0x2a6a8a], charge_rifle: [0x2a2a38, 0x5a3a8a]
+  mag_launcher: [0x28313a, 0x2a6a8a], charge_rifle: [0x2a2a38, 0x5a3a8a],
+  predator: [0x2f3336, 0x5a6a7a], thermite: [0x33291f, 0xb0512a], splitter: [0x28303a, 0x3aa08a]
 };
 
 // First-person viewmodel gun attached to the camera — silhouette varies by weapon.
