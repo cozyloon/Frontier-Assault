@@ -1,0 +1,58 @@
+{
+ "cozy": {
+  "name": "cozy",
+  "salt": "54dd027688f6de70ff1d504d",
+  "hash": "0a1f556a94d39d13f9aef01be08640096a227f63833cc1fc271a5a0fc3f0ca02",
+  "xp": 0,
+  "gen": 1,
+  "kills": 0,
+  "deaths": 0,
+  "titanKills": 0,
+  "matches": 0,
+  "wins": 0,
+  "loadout": {
+   "pilot": {
+    "primary": "r101",
+    "sidearm": "p2011",
+    "at": "archer",
+    "ordnance": "frag",
+    "tactical": "cloak"
+   },
+   "titan": {
+    "chassis": "atlas",
+    "primary": "xo16",
+    "ordnance": "rocket_salvo",
+    "tactical": "vortex"
+   }
+  },
+  "created": 1787559575944
+ },
+ "dbtest": {
+  "name": "DbTest",
+  "salt": "9399b58f859827402925f0d6",
+  "hash": "d8c9912fab127f751dd0f8e40d91405f5ac2e6ad1481d162cd4956ec33c911ee",
+  "xp": 700,
+  "gen": 1,
+  "kills": 0,
+  "deaths": 0,
+  "titanKills": 0,
+  "matches": 0,
+  "wins": 0,
+  "loadout": {
+   "pilot": {
+    "primary": "r101",
+    "sidearm": "p2011",
+    "at": "archer",
+    "ordnance": "frag",
+    "tactical": "cloak"
+   },
+   "titan": {
+    "chassis": "atlas",
+    "primary": "xo16",
+    "ordnance": "rocket_salvo",
+    "tactical": "vortex"
+   }
+  },
+  "created": 1787561978260
+ }
+}

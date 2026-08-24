@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FRONTIER ASSAULT — Pilot &amp; Titan PvP</title>
+<link rel="stylesheet" href="style.css">
+<script type="importmap">
+{ "imports": { "three": "/vendor/three.module.js" } }
+</script>
+</head>
+<body>
+
+<!-- ============ SPLASH ============ -->
+<div id="screen-splash" class="screen active">
+  <div class="splash-inner">
+    <div class="splash-drop"></div>
+    <h1 class="splash-logo"><span class="w1">FRONTIER</span><span class="w2">ASSAULT</span></h1>
+    <div class="splash-sub">PILOT &amp; TITAN ONLINE PVP</div>
+    <div class="splash-prompt">CLICK ANYWHERE TO DEPLOY</div>
+    <div class="splash-credit">
+      Created by <b>Chathumal Dissanayaka</b><br>
+      <span>Powered by Claude AI · Fable</span>
+    </div>
+  </div>
+</div>
+
+<!-- ============ AUTH ============ -->
+<div id="screen-auth" class="screen">
+  <div class="auth-card">
+    <div class="auth-head">
+      <h1 class="logo">FRONTIER<span>ASSAULT</span></h1>
+      <p class="tagline">PILOT &amp; TITAN ONLINE PVP</p>
+    </div>
+    <div class="auth-body">
+      <label class="field">
+        <span>CALLSIGN</span>
+        <input id="auth-name" maxlength="16" placeholder="e.g. Viper-07" autocomplete="username">
+      </label>
+      <label class="field">
+        <span>PASSWORD</span>
+        <input id="auth-pass" type="password" maxlength="64" placeholder="••••••••" autocomplete="current-password">
+      </label>
+      <div id="auth-error" class="error"></div>
+      <button id="btn-login" class="btn primary auth-main">▸ DEPLOY — LOG IN</button>
+      <div class="auth-divider"><span>NEW TO THE FRONTIER?</span></div>
+      <button id="btn-register" class="btn auth-alt">ENLIST — CREATE ACCOUNT</button>
+    </div>
+    <div class="auth-foot">
+      Created by <b>Chathumal Dissanayaka</b> · Powered by Claude AI · Fable
+    </div>
+  </div>
+</div>
+
+<!-- ============ MAIN MENU ============ -->
+<div id="screen-menu" class="screen">
+  <div class="topbar">
+    <span class="logo small">FRONTIER<span>ASSAULT</span></span>
+    <span id="menu-player" class="player-chip"></span>
+  </div>
+  <div class="panel menu-panel">
+    <button class="btn big primary" id="btn-play">PLAY — LOBBIES</button>
+    <button class="btn big" id="btn-armory">ARMORY &amp; LOADOUT</button>
+    <button class="btn big" id="btn-stats">PILOT RECORD</button>
+    <button class="btn big ghost" id="btn-logout">LOG OUT</button>
+  </div>
+  <div class="panel xp-panel">
+    <div id="menu-xpbar" class="xpbar"><div class="fill"></div><span class="label"></span></div>
+  </div>
+</div>
+
+<!-- ============ LOBBY BROWSER ============ -->
+<div id="screen-lobbies" class="screen">
+  <div class="topbar"><button class="btn back" data-back="menu">&larr; BACK</button><h2>OPERATIONS BOARD</h2><span id="lb-player" class="player-chip"></span></div>
+  <div class="columns">
+    <div class="panel grow">
+      <div class="row spread"><h3>Open lobbies</h3><button id="btn-refresh" class="btn sm">REFRESH</button></div>
+      <div id="lobby-list" class="list"></div>
+    </div>
+    <div class="panel">
+      <h3>Create lobby</h3>
+      <input id="cl-name" maxlength="32" placeholder="Lobby name">
+      <label>Map <select id="cl-map"></select></label>
+      <label>Max players <select id="cl-max"><option>2</option><option>4</option><option>6</option><option>8</option><option selected>12</option></select></label>
+      <label>Score limit <select id="cl-score"><option>10</option><option>25</option><option selected>50</option><option>75</option></select></label>
+      <label>Time limit <select id="cl-time"><option value="300">5 min</option><option value="600" selected>10 min</option><option value="900">15 min</option></select></label>
+      <button id="btn-create" class="btn primary">CREATE</button>
+      <div id="lobbies-error" class="error"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ LOBBY ROOM ============ -->
+<div id="screen-room" class="screen">
+  <div class="topbar"><button class="btn back" id="btn-leave-room">&larr; LEAVE</button><h2 id="room-title"></h2><span id="room-map" class="player-chip"></span></div>
+  <div class="columns">
+    <div class="panel grow">
+      <h3>Roster</h3>
+      <div class="teams">
+        <div><h4 class="imc">IMC</h4><div id="room-imc" class="list"></div></div>
+        <div><h4 class="militia">MILITIA</h4><div id="room-militia" class="list"></div></div>
+      </div>
+      <div class="row">
+        <button id="btn-switch-team" class="btn sm">SWITCH TEAM</button>
+        <button id="btn-ready" class="btn sm">READY</button>
+        <button id="btn-start" class="btn sm primary hidden">START MATCH</button>
+      </div>
+      <div id="room-error" class="error"></div>
+    </div>
+    <div class="panel chatbox">
+      <h3>Comms</h3>
+      <div id="chat-log" class="chat-log"></div>
+      <input id="chat-input" maxlength="200" placeholder="Message… (Enter)">
+    </div>
+  </div>
+</div>
+
+<!-- ============ ARMORY ============ -->
+<div id="screen-armory" class="screen">
+  <div class="topbar"><button class="btn back" data-back="menu">&larr; BACK</button><h2>ARMORY</h2><span id="armory-player" class="player-chip"></span></div>
+  <div class="columns">
+    <div class="panel grow">
+      <div class="tabs"><button class="tab active" data-tab="pilot">PILOT</button><button class="tab" data-tab="titan">TITAN</button></div>
+      <div id="armory-slots"></div>
+    </div>
+    <div class="panel grow">
+      <h3 id="armory-picker-title">Select an item</h3>
+      <div id="armory-picker" class="list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ STATS ============ -->
+<div id="screen-stats" class="screen">
+  <div class="topbar"><button class="btn back" data-back="menu">&larr; BACK</button><h2>PILOT RECORD</h2></div>
+  <div class="panel stats-panel" id="stats-body"></div>
+</div>
+
+<!-- ============ GAME ============ -->
+<div id="screen-game" class="screen game-screen">
+  <canvas id="game-canvas"></canvas>
+  <div id="hud">
+    <!-- full-screen state overlays -->
+    <div id="damage-overlay"></div>
+    <div id="cloak-overlay" class="hidden">
+      <div class="cloak-scan"></div>
+      <div class="cloak-label">CLOAK ACTIVE</div>
+    </div>
+    <div id="scope-overlay" class="hidden">
+      <div class="scope-ring"></div>
+      <div class="scope-line h"></div>
+      <div class="scope-line v"></div>
+      <div class="scope-ticks"></div>
+    </div>
+    <div id="cockpit-overlay" class="hidden">
+      <div class="cp-frame top"></div>
+      <div class="cp-frame bottom"></div>
+      <div class="cp-strut left"></div>
+      <div class="cp-strut right"></div>
+      <div class="cp-glass"></div>
+      <div class="cp-scanline"></div>
+      <div class="cp-readout left">CORE SYSTEMS<br>NOMINAL</div>
+      <div class="cp-readout right">HULL INTEGRITY<br>LINKED</div>
+      <div id="cp-hull">
+        <div class="cp-hull-label">HULL INTEGRITY</div>
+        <div class="cp-hull-bar"><div class="shield"></div><div class="fill"></div></div>
+        <div class="cp-hull-num">4200 / 4200</div>
+      </div>
+    </div>
+    <div id="embark-flash" class="hidden"><span>TRANSFERRING CONTROL…</span></div>
+    <div id="crosshair">+</div>
+    <div id="hitmarker"></div>
+    <div id="hud-top">
+      <div class="score imc"><span>IMC</span><b id="score-imc">0</b></div>
+      <div id="hud-timer">10:00</div>
+      <div class="score militia"><span>MILITIA</span><b id="score-mil">0</b></div>
+    </div>
+    <div id="killfeed"></div>
+    <div id="hud-bottom-left">
+      <div id="hud-health"><div class="fill"></div></div>
+      <div id="hud-shield" class="hidden"><div class="fill"></div></div>
+      <div id="hud-titanhull" class="hidden"><div class="fill"></div><span class="label"></span></div>
+      <div id="hud-titanmeter"><div class="fill"></div><span class="label">TITAN 0%</span></div>
+      <div id="hud-tactical"><div class="fill"></div><span class="label">TACTICAL</span></div>
+    </div>
+    <div id="hud-bottom-right">
+      <div id="hud-weapon"></div>
+      <div id="hud-ammo"></div>
+      <div id="hud-ordnance"></div>
+    </div>
+    <div id="hud-center-msg"></div>
+    <div id="hud-xp-toasts"></div>
+    <div id="hud-lockon" class="hidden"></div>
+    <div id="hud-hints"></div>
+    <div id="respawn-overlay" class="hidden"><h2>KIA</h2><p id="respawn-msg"></p></div>
+    <div id="pause-overlay" class="hidden">
+      <div class="panel">
+        <h2>PAUSED</h2>
+        <p class="hint">Click RESUME to re-lock the mouse.</p>
+        <button class="btn primary" id="btn-resume">RESUME</button>
+        <button class="btn" id="btn-quit-match">QUIT TO LOBBY</button>
+        <div class="controls-help">
+          <b>Controls</b>
+          WASD move · SPACE jump/double-jump · hold SPACE near wall = wall-run<br>
+          SHIFT sprint · Mouse fire · R reload · 1/2/3 weapons · G ordnance<br>
+          Q tactical · V call TITANFALL (marks drop zone) · E embark/disembark/rodeo<br>
+          C melee (pilot kick · titan punch · Ronin sword) · X eject<br>
+          V or F after deploy = auto-titan FOLLOW/GUARD · TAB scoreboard · ESC pause
+        </div>
+      </div>
+    </div>
+    <div id="scoreboard" class="hidden"><table id="scoreboard-table"></table></div>
+    <div id="results-overlay" class="hidden"><div class="panel" id="results-body"></div></div>
+  </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

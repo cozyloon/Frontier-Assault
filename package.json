@@ -1,0 +1,19 @@
+{
+  "name": "frontier-assault",
+  "version": "1.0.0",
+  "description": "Browser-based online PvP mech shooter inspired by Titanfall 1 — pilots, titans, wall-running, lobbies, XP progression.",
+  "type": "module",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "pg": "^8.23.0",
+    "socket.io": "^4.8.1",
+    "three": "^0.169.0"
+  }
+}
