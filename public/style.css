@@ -21,7 +21,19 @@ body::before { content:''; position: fixed; inset: 0; z-index: -1;
 
 .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 20px; backdrop-filter: blur(6px); max-width: 96vw; }
 
+/* ---- fullscreen toggle (always on top, all screens) ---- */
+#btn-fullscreen {
+  position: fixed; top: 12px; right: 14px; z-index: 300;
+  width: 40px; height: 40px; font-size: 20px; line-height: 1;
+  background: var(--panel); color: var(--txt);
+  border: 1px solid var(--line); border-radius: 8px; cursor: pointer;
+  opacity: 0.65; transition: opacity .15s, transform .15s;
+}
+#btn-fullscreen:hover { opacity: 1; transform: scale(1.06); }
+
 /* ---- auth card ---- */
+/* keep the card off-center so the titan showcase behind it stays visible */
+#screen-auth, #screen-menu { align-items: flex-start; padding-left: clamp(24px, 9vw, 160px); }
 .auth-card { width: 420px; max-width: 94vw; border: 1px solid var(--line); border-radius: 12px; overflow: hidden;
   background: #0c111af0; backdrop-filter: blur(10px); box-shadow: 0 24px 70px #000c, 0 0 0 1px #ffffff08;
   animation: fadeup .5s; }

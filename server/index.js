@@ -218,7 +218,7 @@ function gruntTargets(m, team) {
   for (const mp of m.players.values()) {
     if (mp.team === team || mp.mode !== 'pilot' || mp.pilotHp <= 0 || !mp.lastPos) continue;
     if (mp.cloaked) continue;   // cloaked pilots are invisible to grunts (TF1 behavior)
-    out.push({ kind: 'pilot', ref: mp, x: mp.lastPos[0], y: mp.lastPos[1], z: mp.lastPos[2] });
+    out.push({ kind: 'pilot', ref: mp, x: mp.lastPos[0], y: mp.lastPos[1] + 0.9, z: mp.lastPos[2] });   // lastPos is feet; aim at the torso
   }
   return out;
 }
@@ -262,9 +262,13 @@ function tickGrunts(l) {
       }
     } else {
       // advance: align to lane, then push toward the enemy side (or nearest target)
-      if (Math.abs(g.x - g.laneX) > 0.6) g.x += Math.sign(g.laneX - g.x) * GRUNTS.speed;
-      else if (best) g.z += Math.sign(best.z - g.z) * GRUNTS.speed;
+      // steps are clamped to the remaining distance so grunts can't overshoot and oscillate
+      const dx = g.laneX - g.x;
+      if (Math.abs(dx) > 0.6) g.x += Math.sign(dx) * Math.min(GRUNTS.speed, Math.abs(dx));
+      else if (best) g.z += Math.sign(best.z - g.z) * Math.min(GRUNTS.speed, Math.abs(best.z - g.z));
       else g.z += (g.team === 'imc' ? 1 : -1) * GRUNTS.speed;
+      const edge = MAPS[l.mapId].size / 2 - 6;
+      g.z = Math.max(-edge, Math.min(edge, g.z));
     }
   }
   io.to(l.id).emit('grunts', [...m.grunts.values()].filter(g => !g.hold)

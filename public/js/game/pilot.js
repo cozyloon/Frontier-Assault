@@ -30,6 +30,7 @@ export class PilotController {
   }
 
   get eyePos() { return this.pos.clone().add(new THREE.Vector3(0, PILOT_EYE - HALF.y, 0)); }
+  get feetPos() { return this.pos.clone().add(new THREE.Vector3(0, -HALF.y, 0)); }
   get cloaked() { return this.tactical.id === 'cloak' && this.tacticalActive > 0; }
   get stimmed() { return this.tactical.id === 'stim' && this.tacticalActive > 0; }
   get radarActive() { return this.tactical.id === 'radar' && this.tacticalActive > 0; }

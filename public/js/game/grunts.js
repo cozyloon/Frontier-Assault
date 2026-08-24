@@ -1,6 +1,6 @@
 // Client rendering + hit registration for server-simulated AI grunts.
 import * as THREE from 'three';
-import { teamColor, animateWalk, makeDropship } from './models.js';
+import { teamColor, animateWalk, makeDropship, UNIT_BOX } from './models.js';
 import { sfx } from './audio.js';
 
 // drop pod: capsule that slams down and stays as a battlefield prop
@@ -30,8 +30,10 @@ function makeGruntMesh(color) {
   const suit = new THREE.MeshLambertMaterial({ color: 0x4a4740 });
   const accent = new THREE.MeshLambertMaterial({ color });
   const dark = new THREE.MeshLambertMaterial({ color: 0x25231f });
+  const glow = new THREE.MeshLambertMaterial({ color: 0x101418, emissive: color, emissiveIntensity: 0.85 });
   const part = (parent, mat, w, h, d, x, y, z) => {
-    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+    const m = new THREE.Mesh(UNIT_BOX, mat);
+    m.scale.set(w, h, d);
     m.position.set(x, y, z); parent.add(m); return m;
   };
   // articulated legs (hip pivot at y=0.72)
@@ -40,16 +42,22 @@ function makeGruntMesh(color) {
     const leg = new THREE.Group();
     leg.position.set(s * 0.1, 0.72, 0);
     part(leg, suit, 0.14, 0.62, 0.2, 0, -0.31, 0);
-    part(leg, dark, 0.15, 0.1, 0.26, 0, -0.66, 0.03);   // boot
+    part(leg, accent, 0.15, 0.09, 0.21, 0, -0.18, 0.01); // knee band
+    part(leg, dark, 0.15, 0.1, 0.26, 0, -0.66, 0.03);    // boot
     g.add(leg);
     anim[s < 0 ? 'lLeg' : 'rLeg'] = leg;
   }
   g.userData.anim = anim;
   part(g, suit, 0.44, 0.5, 0.28, 0, 0.95, 0);            // torso
   part(g, accent, 0.34, 0.14, 0.3, 0, 1.1, 0.02);        // chest strap
+  part(g, dark, 0.12, 0.1, 0.07, -0.1, 0.95, 0.15);      // chest pouch
+  part(g, dark, 0.3, 0.34, 0.12, 0, 1.0, -0.19);         // backpack
+  part(g, dark, 0.02, 0.3, 0.02, 0.12, 1.32, -0.2);      // radio antenna
   part(g, dark, 0.09, 0.09, 0.55, 0.16, 0.98, 0.25);     // rifle
   part(g, suit, 0.24, 0.24, 0.24, 0, 1.42, 0);           // head
+  part(g, glow, 0.2, 0.05, 0.02, 0, 1.45, 0.13);         // team-lit visor
   part(g, dark, 0.26, 0.08, 0.26, 0, 1.55, 0);           // helmet
+  part(g, accent, 0.27, 0.03, 0.27, 0, 1.52, 0);         // helmet team band
   g.scale.setScalar(0.92);                                // grunts are a touch smaller than pilots
   return g;
 }

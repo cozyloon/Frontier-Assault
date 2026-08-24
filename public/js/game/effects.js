@@ -1,6 +1,14 @@
 // Lightweight visual effects: tracers, explosions, jump jets, smoke, shields.
 import * as THREE from 'three';
 
+// Shared geometries for high-frequency effects — never disposed (see update()).
+const SPARK_GEO = new THREE.BoxGeometry(0.09, 0.09, 0.09);
+const STREAK_GEO = new THREE.BoxGeometry(0.05, 0.05, 0.05);
+const SPHERE_GEO = new THREE.SphereGeometry(1, 12, 10);
+const SPHERE_LO_GEO = new THREE.SphereGeometry(1, 8, 6);
+const CONE_GEO = new THREE.ConeGeometry(0.09, 0.55, 7);
+for (const g of [SPARK_GEO, STREAK_GEO, SPHERE_GEO, SPHERE_LO_GEO, CONE_GEO]) g.userData.shared = true;
+
 export class Effects {
   constructor(scene) {
     this.scene = scene;
@@ -28,7 +36,7 @@ export class Effects {
   explosion(pos, radius = 4, color = 0xff8a3d) {
     // fireball
     const mat = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.85 });
-    const s = new THREE.Mesh(new THREE.SphereGeometry(1, 12, 10), mat);
+    const s = new THREE.Mesh(SPHERE_GEO, mat);
     s.position.copy(pos);
     this.add(s, 0.45, (it, t) => {
       s.scale.setScalar(0.3 + t * radius);
@@ -36,7 +44,7 @@ export class Effects {
     });
     // inner white core
     const cMat = new THREE.MeshBasicMaterial({ color: 0xfff2cc, transparent: true, opacity: 1 });
-    const core = new THREE.Mesh(new THREE.SphereGeometry(1, 8, 6), cMat);
+    const core = new THREE.Mesh(SPHERE_LO_GEO, cMat);
     core.position.copy(pos);
     this.add(core, 0.2, (it, t) => { core.scale.setScalar(0.2 + t * radius * 0.5); cMat.opacity = 1 - t; });
     // shockwave ring
@@ -63,7 +71,7 @@ export class Effects {
   sparks(pos, count = 6, color = 0xffc27a) {
     for (let i = 0; i < count; i++) {
       const m = new THREE.Mesh(
-        new THREE.BoxGeometry(0.09, 0.09, 0.09),
+        SPARK_GEO,
         new THREE.MeshBasicMaterial({ color: Math.random() < 0.4 ? 0xfff2cc : color, transparent: true })
       );
       m.position.copy(pos);
@@ -129,9 +137,10 @@ export class Effects {
     const group = new THREE.Group();
     for (let i = 0; i < 10; i++) {
       const m = new THREE.Mesh(
-        new THREE.SphereGeometry(radius * (0.3 + Math.random() * 0.4), 8, 6),
+        SPHERE_LO_GEO,
         new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.35 })
       );
+      m.scale.setScalar(radius * (0.3 + Math.random() * 0.4));
       m.position.set((Math.random() - 0.5) * radius, Math.random() * radius * 0.7, (Math.random() - 0.5) * radius);
       group.add(m);
     }
@@ -178,7 +187,7 @@ export class Effects {
     this.add(light, 0.22, (it, t) => { light.intensity = 20 * (1 - t); });
     for (const side of [-0.12, 0.12]) {
       const mat = new THREE.MeshBasicMaterial({ color: 0x9ae2ff, transparent: true, opacity: 0.9 });
-      const cone = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.55, 7), mat);
+      const cone = new THREE.Mesh(CONE_GEO, mat);
       cone.rotation.x = Math.PI;
       cone.position.copy(pos).add(new THREE.Vector3(side, -0.25, 0));
       this.add(cone, 0.3, (it, t) => {
@@ -188,7 +197,7 @@ export class Effects {
       });
     }
     for (let i = 0; i < 4; i++) {
-      const m = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.05, 0.05),
+      const m = new THREE.Mesh(STREAK_GEO,
         new THREE.MeshBasicMaterial({ color: 0xbfeaff, transparent: true }));
       m.position.copy(pos);
       const vel = new THREE.Vector3((Math.random() - 0.5) * 3, -6 - Math.random() * 4, (Math.random() - 0.5) * 3);
@@ -215,7 +224,10 @@ export class Effects {
       if (it.update) it.update(it, Math.min(1, t));
       if (it.life >= it.ttl) {
         this.scene.remove(it.obj);
-        it.obj.traverse?.(o => { o.geometry?.dispose?.(); o.material?.dispose?.(); });
+        it.obj.traverse?.(o => {
+          if (o.geometry && !o.geometry.userData.shared) o.geometry.dispose();
+          o.material?.dispose?.();
+        });
         this.items.splice(i, 1);
       }
     }

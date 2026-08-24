@@ -18,15 +18,29 @@ export function animateWalk(mesh, phase, amp) {
 const M = (color, emissive = 0, intensity = 1) =>
   new THREE.MeshLambertMaterial({ color, emissive, emissiveIntensity: intensity });
 
+// Shared unit geometries: every primitive part is a scaled instance of these, so
+// building a model allocates zero geometry. Dispose passes must skip shared geos.
+export const UNIT_BOX = new THREE.BoxGeometry(1, 1, 1);
+export const UNIT_CYL = new THREE.CylinderGeometry(1, 1, 1, 10);
+UNIT_BOX.userData.shared = true;
+UNIT_CYL.userData.shared = true;
+
 function box(g, mat, w, h, d, x, y, z, ry = 0, rx = 0, rz = 0) {
-  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+  const m = new THREE.Mesh(UNIT_BOX, mat);
+  m.scale.set(w, h, d);
   m.position.set(x, y, z);
   m.rotation.set(rx, ry, rz);
   g.add(m);
   return m;
 }
 function cyl(g, mat, r1, r2, h, x, y, z, rx = 0, rz = 0) {
-  const m = new THREE.Mesh(new THREE.CylinderGeometry(r1, r2, h, 10), mat);
+  let m;
+  if (r1 === r2) {
+    m = new THREE.Mesh(UNIT_CYL, mat);
+    m.scale.set(r1, h, r1);
+  } else {
+    m = new THREE.Mesh(new THREE.CylinderGeometry(r1, r2, h, 10), mat);
+  }
   m.position.set(x, y, z);
   m.rotation.x = rx; m.rotation.z = rz;
   g.add(m);
@@ -47,18 +61,28 @@ export function makePilotMesh(color) {
     const leg = new THREE.Group();
     leg.position.set(s * 0.12, 0.84, 0);
     box(leg, suitDark, 0.15, 0.12, 0.26, 0, -0.78, 0.02);              // boot
+    box(leg, suitDark, 0.16, 0.05, 0.28, 0, -0.815, 0.03);             // boot sole
     box(leg, suit, 0.13, 0.34, 0.15, 0, -0.55, 0);                     // shin
+    box(leg, suitDark, 0.14, 0.26, 0.04, 0, -0.55, 0.08);              // shin guard
+    box(leg, armor, 0.14, 0.1, 0.16, 0, -0.4, 0.03);                   // knee pad
     box(leg, suit, 0.15, 0.34, 0.18, 0, -0.22, 0.01);                  // thigh
     box(leg, armor, 0.16, 0.12, 0.19, 0, -0.12, 0.01);                 // thigh plate
+    if (s > 0) box(leg, suitDark, 0.07, 0.18, 0.11, 0.1, -0.17, 0.05); // sidearm holster
+    else box(leg, suitDark, 0.06, 0.12, 0.12, -0.1, -0.16, 0.04);      // utility pouch
     g.add(leg);
     anim[s < 0 ? 'lLeg' : 'rLeg'] = leg;
   }
   g.userData.anim = anim;
   box(g, suitDark, 0.34, 0.14, 0.24, 0, 0.84, 0);                      // pelvis / belt
+  box(g, suitDark, 0.08, 0.1, 0.05, 0.12, 0.85, 0.13);                 // belt pouch R
+  box(g, suitDark, 0.08, 0.1, 0.05, -0.12, 0.85, 0.13);                // belt pouch L
   // torso
   box(g, suit, 0.42, 0.42, 0.26, 0, 1.12, 0);                          // torso
   box(g, armor, 0.36, 0.26, 0.08, 0, 1.18, 0.15);                      // chest plate
   box(g, glow, 0.1, 0.05, 0.02, 0, 1.24, 0.2);                         // chest light
+  box(g, suitDark, 0.1, 0.09, 0.06, -0.11, 1.05, 0.16);                // chest rig pouch
+  box(g, suitDark, 0.07, 0.07, 0.05, 0.12, 1.03, 0.15);                // ammo pouch
+  box(g, armor, 0.44, 0.05, 0.28, 0, 0.95, 0);                         // waist armor band
   // shoulders + arms (posed holding rifle)
   for (const s of [-1, 1]) {
     box(g, armor, 0.16, 0.13, 0.2, s * 0.28, 1.3, 0);                  // pauldron
@@ -73,15 +97,28 @@ export function makePilotMesh(color) {
   head.userData.part = 'head';
   box(g, glow, 0.2, 0.07, 0.03, 0, 1.65, 0.14).userData.part = 'head'; // visor
   box(g, suitDark, 0.26, 0.06, 0.28, 0, 1.74, 0);                      // helmet rim
+  for (const s of [-1, 1]) {                                            // ear comms
+    box(g, suitDark, 0.04, 0.09, 0.09, s * 0.14, 1.61, 0).userData.part = 'head';
+  }
+  box(g, suitDark, 0.05, 0.04, 0.12, 0.1, 1.7, 0.08).userData.part = 'head'; // helmet cam
   // jetpack with glowing nozzles
   box(g, armor, 0.3, 0.34, 0.12, 0, 1.14, -0.19);
+  box(g, suitDark, 0.22, 0.12, 0.05, 0, 1.3, -0.24);                   // pack top unit
+  cyl(g, suitDark, 0.012, 0.012, 0.42, -0.13, 1.5, -0.22);             // radio antenna
+  box(g, glow, 0.04, 0.02, 0.04, -0.13, 1.72, -0.22);                  // antenna tip light
   for (const s of [-1, 1]) {
     cyl(g, suitDark, 0.045, 0.06, 0.14, s * 0.09, 0.95, -0.19);
     box(g, glow, 0.06, 0.03, 0.06, s * 0.09, 0.87, -0.19);             // nozzle glow
   }
 
   g.traverse(o => { if (o.isMesh) { o.userData.hittable = true; o.castShadow = true; } });
-  return g;
+  // authored with the face on +z, but game-forward (yaw 0) is -z: flip the visuals
+  // so the visor and rifle point where the player actually aims and walks
+  const root = new THREE.Group();
+  g.rotation.y = Math.PI;
+  root.add(g);
+  root.userData.anim = g.userData.anim;
+  return root;
 }
 
 // ============ TITAN (~4.6m, origin at feet) ============
@@ -114,20 +151,33 @@ export function makeTitanMesh(chassisId, color) {
     const knee = new THREE.Mesh(new THREE.SphereGeometry(s.torsoW * 0.15, 8, 6), trim);
     knee.position.set(0, -legH * 0.52, 0.1); leg.add(knee);
     box(leg, trim, s.torsoW * 0.2, legH * 0.5, 0.6, 0, -legH * 0.76, -0.02, 0, -0.1);    // shin
+    cyl(leg, dark, 0.055, 0.055, legH * 0.42, 0, -legH * 0.5, -0.3, 0.22);               // rear hydraulic piston
+    cyl(leg, dark, 0.04, 0.04, legH * 0.3, s.torsoW * 0.12, -legH * 0.42, 0.22, -0.3);   // front actuator
     box(leg, dark, s.torsoW * 0.32, 0.34, 1.25, 0, 0.17 - legH, 0.18);                    // foot
+    box(leg, trim, s.torsoW * 0.34, 0.14, 0.5, 0, 0.42 - legH, -0.35);                    // heel plate
     box(leg, accent, s.torsoW * 0.12, 0.1, 0.5, 0, 0.4 - legH, 0.45);                     // toe stripe
     g.add(leg);
     anim[side < 0 ? 'lLeg' : 'rLeg'] = leg;
   }
   g.userData.anim = anim;
-  // pelvis
+  // pelvis + hip armor skirts
   box(g, trim, s.torsoW * 0.8, 0.55, 1.0, 0, legH + 0.05, 0);
+  for (const side of [-1, 1]) {
+    box(g, body, 0.16, 0.75, 0.95, side * s.torsoW * 0.5, legH + 0.05, 0, 0, 0, side * -0.14);  // hip skirt plate
+    box(g, accent, 0.17, 0.12, 0.6, side * s.torsoW * 0.52, legH + 0.28, 0, 0, 0, side * -0.14); // skirt stripe
+  }
   // ---- torso: lower + angled upper ----
   box(g, body, s.torsoW, s.torsoH * 0.72, 1.45, 0, torsoY - s.torsoH * 0.1, 0);
   box(g, body, s.torsoW * 0.86, s.torsoH * 0.5, 1.2, 0, torsoY + s.torsoH * 0.32, 0.12, 0, -0.12);
   // cockpit hatch + team stripe
   box(g, accent, s.torsoW * 0.38, s.torsoH * 0.44, 0.16, 0, torsoY + s.torsoH * 0.02, 0.76);
   box(g, teamGlow, s.torsoW * 0.3, 0.06, 0.05, 0, torsoY - s.torsoH * 0.24, 0.8);
+  // chest intake vents (warm glow slits either side of the hatch)
+  for (const side of [-1, 1]) {
+    box(g, dark, s.torsoW * 0.14, s.torsoH * 0.3, 0.1, side * s.torsoW * 0.32, torsoY + s.torsoH * 0.05, 0.72);
+    box(g, M(0x140f0a, 0xff8a3d, 0.55), s.torsoW * 0.09, 0.05, 0.06, side * s.torsoW * 0.32, torsoY + s.torsoH * 0.12, 0.78);
+    box(g, M(0x140f0a, 0xff8a3d, 0.55), s.torsoW * 0.09, 0.05, 0.06, side * s.torsoW * 0.32, torsoY - s.torsoH * 0.02, 0.78);
+  }
   // sensor head with glowing eye
   box(g, trim, s.torsoW * 0.34, 0.44, 0.7, 0, torsoY + s.torsoH * 0.68, 0.25);
   box(g, eyeGlow, s.torsoW * 0.24, 0.12, 0.06, 0, torsoY + s.torsoH * 0.68, 0.62);
@@ -156,6 +206,22 @@ export function makeTitanMesh(chassisId, color) {
     box(g, dark, 0.5, 0.55, 1.6, gx, torsoY - 1.2, 0.7);                                  // receiver
     cyl(g, dark, 0.12, 0.12, 1.3, gx, torsoY - 1.15, 1.7, Math.PI / 2);                   // barrel
     cyl(g, trim, 0.17, 0.17, 0.25, gx, torsoY - 1.15, 2.3, Math.PI / 2);                  // muzzle brake
+    cyl(g, trim, 0.24, 0.24, 0.32, gx, torsoY - 1.55, 0.5, Math.PI / 2);                  // ammo drum
+  }
+  // ---- chassis-specific silhouette details ----
+  if (chassisId === 'ogre') {
+    for (const side of [-1, 1]) {
+      cyl(g, dark, 0.13, 0.13, 1.0, side * s.torsoW * 0.3, torsoY + s.torsoH * 0.95, -0.45, 0.18);   // exhaust stack
+      box(g, M(0x140f0a, 0xff8a3d, 0.7), 0.2, 0.06, 0.2, side * s.torsoW * 0.3, torsoY + s.torsoH * 1.22, -0.55); // stack glow
+      box(g, trim, s.armW * 1.7, 0.3, 1.35, side * (s.torsoW / 2 + s.armW * 0.7), torsoY + s.torsoH * 0.68, 0);   // pauldron slab
+    }
+    box(g, trim, s.torsoW * 0.7, 0.25, 1.3, 0, torsoY + s.torsoH * 0.62, -0.3);           // spine armor ridge
+  } else if (chassisId === 'stryder') {
+    for (const side of [-1, 1]) {
+      box(g, trim, 0.08, 1.05, 0.5, side * s.torsoW * 0.42, torsoY + s.torsoH * 0.75, -0.6, 0, 0, side * 0.55);   // winglet
+      box(g, teamGlow, 0.09, 0.5, 0.06, side * s.torsoW * 0.42, torsoY + s.torsoH * 0.75, -0.82, 0, 0, side * 0.55); // winglet edge light
+    }
+    box(g, trim, 0.1, 0.4, 0.55, 0, torsoY + s.torsoH * 0.95, 0.05);                      // head crest fin
   }
   // ---- back: thrusters + rodeo panel ----
   for (const side of [-1, 1]) {
@@ -165,7 +231,13 @@ export function makeTitanMesh(chassisId, color) {
   box(g, M(0x6a2424), s.torsoW * 0.46, s.torsoH * 0.44, 0.14, 0, torsoY, -0.8);           // rodeo weak panel
 
   g.traverse(o => { if (o.isMesh) { o.userData.hittable = true; o.castShadow = true; } });
-  return g;
+  // same +z-authored flip as the pilot: cockpit hatch, eye and weapon now face
+  // the titan's movement/aim direction instead of its back
+  const root = new THREE.Group();
+  g.rotation.y = Math.PI;
+  root.add(g);
+  root.userData.anim = g.userData.anim;
+  return root;
 }
 
 // ============ DROPSHIP (for the deployment intro) ============

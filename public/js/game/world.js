@@ -1,5 +1,6 @@
 // Procedural, seed-deterministic maps: every client builds identical geometry.
 import * as THREE from 'three';
+import { UNIT_BOX, UNIT_CYL } from './models.js';
 
 function mulberry32(a) {
   return function () {
@@ -22,16 +23,54 @@ function makeWindowTexture(rng, facadeCss, litCss) {
   c.width = 128; c.height = 256;
   const x = c.getContext('2d');
   x.fillStyle = facadeCss; x.fillRect(0, 0, 128, 256);
+  // subtle vertical panel seams for facade texture variation
+  for (let i = 0; i <= 6; i++) {
+    x.fillStyle = 'rgba(0,0,0,0.10)';
+    x.fillRect(3 + i * 20, 0, 2, 256);
+  }
   for (let wy = 0; wy < 14; wy++) {
+    // faint floor slab line
+    x.fillStyle = 'rgba(0,0,0,0.12)';
+    x.fillRect(0, 7 + wy * 17, 128, 1);
     for (let wx = 0; wx < 6; wx++) {
-      const lit = rng() < 0.28;
-      x.fillStyle = lit ? litCss : 'rgba(8,12,18,0.85)';
+      // window frame, then pane: dark, warm-lit, or cool-lit
+      x.fillStyle = 'rgba(0,0,0,0.55)';
+      x.fillRect(7 + wx * 20, 9 + wy * 17, 14, 11);
+      const r = rng();
+      x.fillStyle = r < 0.22 ? litCss : r < 0.3 ? '#9fd4ff' : 'rgba(8,12,18,0.85)';
       x.fillRect(8 + wx * 20, 10 + wy * 17, 12, 9);
     }
   }
+  // rooftop parapet band + darker street-level base
+  x.fillStyle = 'rgba(0,0,0,0.4)'; x.fillRect(0, 0, 128, 6);
+  x.fillStyle = 'rgba(6,9,13,0.9)'; x.fillRect(0, 242, 128, 14);
+  x.fillStyle = litCss; x.globalAlpha = 0.8;
+  x.fillRect(30, 245, 10, 9); x.fillRect(88, 245, 10, 9);   // lit doorways
+  x.globalAlpha = 1;
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.anisotropy = 8;   // kills shimmering line moiré at grazing angles
+  return tex;
+}
+
+// dark asphalt strip with faded center dashes, tiled along the road
+function makeRoadTexture() {
+  const c = document.createElement('canvas');
+  c.width = 128; c.height = 64;
+  const x = c.getContext('2d');
+  x.fillStyle = '#26292e'; x.fillRect(0, 0, 128, 64);
+  for (let i = 0; i < 400; i++) {
+    x.fillStyle = `rgba(${Math.random() < 0.5 ? '255,255,255' : '0,0,0'},${0.02 + Math.random() * 0.03})`;
+    x.fillRect(Math.random() * 128, Math.random() * 64, 1, 1);
+  }
+  x.fillStyle = 'rgba(210,205,160,0.4)';
+  x.fillRect(10, 29, 40, 5); x.fillRect(74, 29, 40, 5);     // center dashes
+  x.fillStyle = 'rgba(200,200,200,0.18)';
+  x.fillRect(0, 2, 128, 2); x.fillRect(0, 60, 128, 2);      // edge lines
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 8;
   return tex;
 }
 
@@ -133,6 +172,66 @@ export function buildWorld(scene, mapDef) {
   skySprite([[0, '#fff8e8'], [0.25, '#ffd9a0cc'], [1, 'rgba(255,170,80,0)']], 260, new THREE.Vector3(400, 480, 220));
   skySprite([[0, '#aebfd8cc'], [0.5, '#8095b666'], [1, 'rgba(120,140,180,0)']], 340, new THREE.Vector3(-500, 320, -480));
 
+  // distant mountain silhouette ring (visual-only, sits between map walls and sky dome)
+  {
+    const c = document.createElement('canvas');
+    c.width = 1024; c.height = 256;
+    const x = c.getContext('2d');
+    const ridge = (baseY, jag, css) => {
+      x.fillStyle = css;
+      x.beginPath(); x.moveTo(0, 256);
+      let y = baseY;
+      const y0 = y;
+      for (let px = 0; px <= 1024; px += 16) {
+        // wrap-friendly: blend back toward the start height at the seam
+        y = px > 960 ? y + (y0 - y) * 0.35 : Math.max(40, Math.min(230, y + (rng() - 0.5) * jag));
+        x.lineTo(px, y);
+      }
+      x.lineTo(1024, 256); x.closePath(); x.fill();
+    };
+    const far = new THREE.Color(theme.fog).lerp(new THREE.Color(theme.sky), 0.5);
+    const near = new THREE.Color(theme.fog).multiplyScalar(0.8);
+    ridge(120, 55, '#' + far.getHexString());
+    ridge(175, 70, '#' + near.getHexString());
+    const tex = new THREE.CanvasTexture(c);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.wrapS = THREE.RepeatWrapping;
+    tex.repeat.x = 3;
+    const mtn = new THREE.Mesh(
+      new THREE.CylinderGeometry(size * 1.5, size * 1.5, size * 0.42, 48, 1, true),
+      new THREE.MeshBasicMaterial({ map: tex, transparent: true, side: THREE.BackSide, fog: false, depthWrite: false })
+    );
+    mtn.position.y = size * 0.14;
+    scene.add(mtn);
+  }
+
+  // drifting cloud layer (soft canvas blobs, slow rotation via world.update)
+  const clouds = new THREE.Group();
+  {
+    const c = document.createElement('canvas'); c.width = c.height = 128;
+    const x = c.getContext('2d');
+    for (const [bx, by, br] of [[45, 70, 34], [70, 62, 30], [90, 72, 24], [58, 78, 26]]) {
+      const gr = x.createRadialGradient(bx, by, 2, bx, by, br);
+      gr.addColorStop(0, 'rgba(235,240,248,0.55)');
+      gr.addColorStop(0.7, 'rgba(215,224,238,0.25)');
+      gr.addColorStop(1, 'rgba(210,220,235,0)');
+      x.fillStyle = gr; x.fillRect(0, 0, 128, 128);
+    }
+    const cloudTex = new THREE.CanvasTexture(c);
+    for (let i = 0; i < 10; i++) {
+      const sp = new THREE.Sprite(new THREE.SpriteMaterial({
+        map: cloudTex, transparent: true, opacity: 0.5 + rng() * 0.25,
+        fog: false, depthWrite: false
+      }));
+      sp.raycast = () => {};
+      const a = rng() * Math.PI * 2, r = size * (0.35 + rng() * 0.85);
+      sp.position.set(Math.cos(a) * r, 130 + rng() * 110, Math.sin(a) * r);
+      sp.scale.set(90 + rng() * 110, 26 + rng() * 26, 1);
+      clouds.add(sp);
+    }
+    scene.add(clouds);
+  }
+
   const colliders = [];      // {min:THREE.Vector3, max:THREE.Vector3}
   const meshes = [];         // raycastable world meshes
 
@@ -151,6 +250,7 @@ export function buildWorld(scene, mapDef) {
 
   const wallMat = new THREE.MeshLambertMaterial({ color: theme.wall });
   const accMat = new THREE.MeshLambertMaterial({ color: theme.accent });
+  const trimMat = new THREE.MeshLambertMaterial({ color: new THREE.Color(theme.wall).multiplyScalar(0.55) });
   // two window-facade variants for tall structures
   const winMats = [0, 1].map(() => {
     const tex = makeWindowTexture(rng, cssHex(theme.wall), '#ffd98a');
@@ -163,7 +263,8 @@ export function buildWorld(scene, mapDef) {
   function addBox(x, y, z, w, h, d, mat) {
     // sink slightly so bottom faces never sit coplanar with the ground (z-fighting lines)
     const ys = y - 0.03;
-    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+    const m = new THREE.Mesh(UNIT_BOX, mat);
+    m.scale.set(w, h, d);
     m.position.set(x, ys, z);
     m.castShadow = m.receiveShadow = true;
     scene.add(m);
@@ -183,9 +284,29 @@ export function buildWorld(scene, mapDef) {
   addBox(-half - WT / 2, WH / 2, 0, WT, WH, size + WT * 2, wallMat);
   addBox(half + WT / 2, WH / 2, 0, WT, WH, size + WT * 2, wallMat);
 
-  // city blocks — leave two spawn plazas at map ends (z axis)
+  // street grid along the cell boundaries (visual-only planes above the ground)
   const cells = 6;
   const cell = size / cells;
+  {
+    const roadTex = makeRoadTexture();
+    roadTex.repeat.set(size / 32, 1);
+    const roadMat = new THREE.MeshLambertMaterial({ map: roadTex, transparent: true, opacity: 0.96 });
+    const roadGeo = new THREE.PlaneGeometry(size, 7);
+    roadGeo.userData.shared = true;
+    for (let i = 1; i < cells; i++) {
+      for (const vertical of [false, true]) {
+        const road = new THREE.Mesh(roadGeo, roadMat);
+        road.rotation.x = -Math.PI / 2;
+        if (vertical) road.rotation.z = Math.PI / 2;
+        road.position.set(vertical ? -half + cell * i : 0, 0.06, vertical ? 0 : -half + cell * i);
+        road.receiveShadow = true;
+        road.raycast = () => {};   // decorative: never blocks shots (ground box handles that)
+        scene.add(road);
+      }
+    }
+  }
+
+  // city blocks — leave two spawn plazas at map ends (z axis)
   for (let gx = 0; gx < cells; gx++) {
     for (let gz = 0; gz < cells; gz++) {
       const cx = -half + cell * (gx + 0.5);
@@ -207,15 +328,32 @@ export function buildWorld(scene, mapDef) {
         const mat = h > 14 && rng() < 0.75 ? winMats[rng() < 0.5 ? 0 : 1]
                   : (rng() < 0.3 ? accMat : wallMat);
         const b = addBox(cx + ox, h / 2, cz + oz, w, h, d, mat);
+        // corner trim columns give tall slabs an architectural edge (visual-only, inside the collider)
+        if (h > 10) {
+          for (const [sx, sz] of [[-1, -1], [-1, 1], [1, -1], [1, 1]]) {
+            const col = new THREE.Mesh(UNIT_BOX, trimMat);
+            col.scale.set(0.5, h, 0.5);
+            col.position.set(cx + ox + sx * (w / 2 - 0.18), h / 2 - 0.03, cz + oz + sz * (d / 2 - 0.18));
+            col.castShadow = true;
+            scene.add(col);
+          }
+          // rooftop parapet cap
+          const cap = new THREE.Mesh(UNIT_BOX, trimMat);
+          cap.scale.set(w + 0.24, 0.35, d + 0.24);
+          cap.position.set(cx + ox, h - 0.1, cz + oz);
+          scene.add(cap);
+        }
         // rooftop lip for wall-run visual interest
         if (rng() < 0.4) addBox(cx + ox, h + 1.05, cz + oz, w * 0.5, 2, d * 0.5, accMat);
         // rooftop details: AC units + antenna (visual only)
         if (h > 12 && rng() < 0.6) {
-          const ac = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1, 1.6), new THREE.MeshLambertMaterial({ color: 0x2c333d }));
+          const ac = new THREE.Mesh(UNIT_BOX, new THREE.MeshLambertMaterial({ color: 0x2c333d }));
+          ac.scale.set(1.6, 1, 1.6);
           ac.position.set(cx + ox + (rng() - 0.5) * w * 0.5, h + 0.52, cz + oz + (rng() - 0.5) * d * 0.5);
           scene.add(ac);
           if (rng() < 0.5) {
-            const ant = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 4, 5), new THREE.MeshLambertMaterial({ color: 0x1c2026 }));
+            const ant = new THREE.Mesh(UNIT_CYL, new THREE.MeshLambertMaterial({ color: 0x1c2026 }));
+            ant.scale.set(0.05, 4, 0.05);
             ant.position.set(cx + ox, h + 2, cz + oz);
             scene.add(ant);
             const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.12, 6, 5), new THREE.MeshLambertMaterial({ color: 0x200606, emissive: 0xff2030, emissiveIntensity: 2 }));
@@ -244,7 +382,8 @@ export function buildWorld(scene, mapDef) {
   const darkMat = new THREE.MeshLambertMaterial({ color: 0x1c2026 });
 
   function addCylinderProp(x, z, r, h, mat) {
-    const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, 12), mat);
+    const m = new THREE.Mesh(UNIT_CYL, mat);
+    m.scale.set(r, h, r);
     m.position.set(x, h / 2 - 0.03, z);
     scene.add(m); meshes.push(m); m.userData.world = true;
     colliders.push({
@@ -257,7 +396,8 @@ export function buildWorld(scene, mapDef) {
     const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 6, 6), darkMat);
     pole.position.set(x, 3, z);
     scene.add(pole);
-    const head = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.18, 0.35), lampHead);
+    const head = new THREE.Mesh(UNIT_BOX, lampHead);
+    head.scale.set(0.9, 0.18, 0.35);
     head.position.set(x + 0.35, 6, z);
     scene.add(head);
   }
@@ -302,7 +442,8 @@ export function buildWorld(scene, mapDef) {
     const gx = 1 + Math.floor(rng() * (cells - 2));
     const gz = 1 + Math.floor(rng() * (cells - 2));
     const px = -half + cell * (gx + 0.5), pz = -half + cell * gz;
-    const pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, cell * 0.96, 10), darkMat);
+    const pipe = new THREE.Mesh(UNIT_CYL, darkMat);
+    pipe.scale.set(0.5, cell * 0.96, 0.5);
     pipe.rotation.z = Math.PI / 2;
     const py = 7 + rng() * 5;
     pipe.position.set(px, py, pz);
@@ -323,7 +464,12 @@ export function buildWorld(scene, mapDef) {
     spawns.militia.push(new THREE.Vector3(x, 1.0, half - cell * 0.5));
   }
 
-  return { colliders, meshes, spawns, size, theme };
+  // slow ambient motion (called from the game loop)
+  function update(dt) {
+    clouds.rotation.y += dt * 0.0035;
+  }
+
+  return { colliders, meshes, spawns, size, theme, update };
 }
 
 // ---------- collision: swept AABB, axis-separated ----------

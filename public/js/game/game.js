@@ -47,8 +47,8 @@ class Game {
 
     // ---------- three ----------
     const canvas = $('game-canvas');
-    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-    this.renderer.setPixelRatio(Math.min(devicePixelRatio, 1.75));
+    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+    this.renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
     this.renderer.setSize(innerWidth, innerHeight);
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -184,7 +184,7 @@ class Game {
       tag.position.y = 2.0;
       buddy.add(tag);
       buddy.position.set(seats[si][0], -1.0, seats[si][1]);
-      buddy.rotation.y = seats[si][0] < 0 ? Math.PI / 2 : -Math.PI / 2;   // face the aisle
+      buddy.rotation.y = seats[si][0] < 0 ? -Math.PI / 2 : Math.PI / 2;   // face the aisle (model front is -z)
       this.dropship.add(buddy);
       si++;
     }
@@ -194,7 +194,7 @@ class Game {
     jmTag.position.y = 2.0;
     jm.add(jmTag);
     jm.position.set(-0.6, -1.0, -4.4);
-    jm.rotation.y = 0;   // faces +z, toward the squad
+    jm.rotation.y = Math.PI;   // faces +z, toward the squad (model front is -z)
     this.dropship.add(jm);
     // seated in the cabin, looking out the open rear ramp
     this.pilot.frozen = true;
@@ -750,7 +750,10 @@ class Game {
   refreshViewmodel() {
     if (this.viewmodel) {
       this.camera.remove(this.viewmodel);
-      this.viewmodel.traverse(o => { o.geometry?.dispose?.(); o.material?.dispose?.(); });
+      this.viewmodel.traverse(o => {
+        if (o.geometry && !o.geometry.userData.shared) o.geometry.dispose();
+        o.material?.dispose?.();
+      });
     }
     this.viewmodel = makeViewmodel(this.arsenal.current.def);
     this.camera.add(this.viewmodel);
@@ -1024,6 +1027,7 @@ class Game {
     this.gruntMgr.update(dt);
     this.projectiles.update(dt);
     this.effects.update(dt);
+    this.world.update?.(dt);
 
     // ---- fov / ads / sprint ----
     const sprinting = this.mode === 'pilot' && (this.input.down('ShiftLeft') || this.input.down('ShiftRight')) && this.pilot.onGround;
@@ -1147,8 +1151,9 @@ class Game {
   }
 
   sendState() {
+    const feet = this.pilot.feetPos;   // remote pilot meshes have their origin at the feet
     const s = {
-      pos: [+this.pilot.pos.x.toFixed(2), +this.pilot.pos.y.toFixed(2), +this.pilot.pos.z.toFixed(2)],
+      pos: [+feet.x.toFixed(2), +feet.y.toFixed(2), +feet.z.toFixed(2)],
       yaw: +this.pilot.yaw.toFixed(3),
       mode: (this.mode === 'rodeo' || this.mode === 'ride') ? 'pilot' : this.mode,
       cloak: this.pilot.cloaked,
